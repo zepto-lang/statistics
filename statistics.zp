@@ -1,0 +1,82 @@
+(module "statistics"
+
+  (export
+    (list "mean" mean)
+    (list "median" median)
+    (list "low-median" low-median)
+    (list "high-median" high-median)
+    (list "grouped-median" grouped-median)
+    (list "variance" variance)
+    (list "pvariance" pvariance)
+    (list "stdev" stdev)
+    (list "pstdev" pstdev))
+
+  (loads '())
+
+  (_ss (lambda (data m)
+    (let ((m (if (nil? m) (mean data) m)))
+      (- (math:list-sum (map (lambda (x) (pow (- x m) 2)) data))
+         (/ (pow (math:list-sum (map (lambda (x) (- x m)) data)) 2) (len data))))))
+
+  (mean (lambda (data) "calculate the mean of a collection"
+    (/. (gsum data) (len data))))
+
+  (median (lambda (data) "calculate the median of a collection"
+    (let ((n (len data))
+          (data (sort:sort data)))
+      (if (= n 0)
+        (nil)
+        (if (= (mod n 2) 1)
+          (get-from data (/ n 2))
+          (let ((mid (/ n 2)))
+            (/. (+ (get-from data (- mid 1)) (get-from data mid)) 2)))))))
+
+  (low-median (lambda (data) "calculate the low median of a collection"
+    (let ((n (len data))
+          (data (sort:sort data)))
+      (if (= n 0)
+        (nil)
+        (if (= (mod n 2) 1)
+          (get-from data (/ n 2))
+          (get-from data (- (/ n 2) 1)))))))
+
+  (high-median (lambda (data) "calculate the high median of a collection"
+    (let ((n (len data))
+          (data (sort:sort data)))
+      (if (= n 0)
+        (nil)
+        (get-from data (/ n 2))))))
+
+  (grouped-median (lambda (data . args) "calculate the grouped median of a collection"
+    (let ((n (len data))
+          (data (sort:sort data))
+          (interval (get-from args 0 1)))
+      (cond
+        ((= n 0) (nil))
+        ((= n 1) (get-from data n))
+        (else
+          (let* ((x (get-from data (/ n 2)))
+                 (l (- x (/. interval 2)))
+                 (cf (index-of data x))
+                 (f (list:count data x)))
+            (+ l (/. (* interval (- (/. n 2) cf)) f))))))))
+
+  (variance (lambda (data . args) "calculate the variance of a collection"
+    (let* ((n (len data))
+           (mean (get-from args 0 (nil)))
+           (ss (_ss data mean)))
+      (/. ss (- n 1)))))
+
+  (pvariance (lambda (data . args) "calculate the population variance of a collection"
+    (let* ((n (len data))
+           (mean (get-from args 0 (nil)))
+           (ss (_ss data mean)))
+      (/. ss n))))
+
+  (stdev (lambda (data . args) "calculate the square root of the sample variance"
+    (let* ((mean (get-from args 0 (nil))))
+      (sqrt (variance data mean)))))
+
+  (pstdev (lambda (data . args) "calculate the square root of the population variance"
+    (let* ((mean (get-from args 0 (nil))))
+      (sqrt (pvariance data mean))))))
