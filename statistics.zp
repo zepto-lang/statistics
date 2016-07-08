@@ -1,8 +1,8 @@
 (module "statistics"
-
   (export
     (list "mean" mean)
     (list "median" median)
+    (list "average" average)
     (list "low-median" low-median)
     (list "high-median" high-median)
     (list "grouped-median" grouped-median)
@@ -10,8 +10,6 @@
     (list "pvariance" pvariance)
     (list "stdev" stdev)
     (list "pstdev" pstdev))
-
-  (loads '())
 
   (_sort (lambda (data)
     (if (sort:sorted? data)
@@ -35,6 +33,9 @@
           (get-from data (/ n 2))
           (let ((mid (/ n 2)))
             (/. (+ (get-from data (- mid 1)) (get-from data mid)) 2)))))))
+
+  (average (lambda (data) "calculate the average of a collection"
+    (/. (reduce + data) (length data))))
 
   (low-median (lambda (data) "calculate the low median of a collection"
     (let ((n (len data))
