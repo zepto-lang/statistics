@@ -19,13 +19,28 @@
   (_ss (lambda (data m)
     (let ((m (if (nil? m) (mean data) m)))
       (- (math:list-sum (map (lambda (x) (pow (- x m) 2)) data))
-         (/ (pow (math:list-sum (map (lambda (x) (- x m)) data)) 2) (len data))))))
+         (/ (pow (math:list-sum (map (lambda (x) (- x m)) data)) 2) (length data))))))
 
-  (mean (lambda (data) "calculate the mean of a collection"
-    (/. (gsum data) (len data))))
+  (mean (lambda (data)
+    "calculate the mean of a collection <par>data</par>. The collection has
+     to implement the <fun>collec?</fun> protocol and the <par>summable</par>
+     protocol.
 
-  (median (lambda (data) "calculate the median of a collection"
-    (let ((n (len data))
+     params:
+       - data: the input data
+     complexity: O(gsum+length)
+     returns: the mean as a float"
+    (/. (gsum data) (length data))))
+
+  (median (lambda (data)
+    "calculate the median of a collection <par>data</par>. The collection has
+     to implement the <fun>collec?</fun> protocol.
+
+     params:
+       - data: the input data
+     complexity: O(n+length+index) if sorted, else sort
+     returns: the median as a float"
+    (let ((n (length data))
           (data (_sort data)))
       (if (= n 0)
         (nil)
@@ -34,11 +49,26 @@
           (let ((mid (/ n 2)))
             (/. (+ (get-from data (- mid 1)) (get-from data mid)) 2)))))))
 
-  (average (lambda (data) "calculate the average of a collection"
-    (/. (reduce + data) (length data))))
+  (average (lambda (data)
+    "calculate the average of a collection <par>data</par>. The collection has
+     to implement the <fun>collec?</fun> protocol and the <par>summable</par>
+     protocol.
 
-  (low-median (lambda (data) "calculate the low median of a collection"
-    (let ((n (len data))
+     params:
+       - data: the input data
+     complexity: O(gsum+length)
+     returns: the average as a float"
+    (/. (gsum data) (length data))))
+
+  (low-median (lambda (data)
+    "calculate the low median of a collection <par>data</par>. The collection
+     has to implement the <fun>collec?</fun> protocol.
+
+     params:
+       - data: the input data
+     complexity: O(n+length+index) if sorted, else sort
+     returns: the low median as a float"
+    (let ((n (length data))
           (data (_sort data)))
       (if (= n 0)
         (nil)
@@ -46,15 +76,29 @@
           (get-from data (/ n 2))
           (get-from data (- (/ n 2) 1)))))))
 
-  (high-median (lambda (data) "calculate the high median of a collection"
-    (let ((n (len data))
+  (high-median (lambda (data)
+    "calculate the high median of a collection <par>data</par>. The collection
+     has to implement the <fun>collec?</fun> protocol.
+
+     params:
+       - data: the input data
+     complexity: O(n+length+index) if sorted, else sort
+     returns: the high median as a float"
+    (let ((n (length data))
           (data (_sort data)))
       (if (= n 0)
         (nil)
         (get-from data (/ n 2))))))
 
-  (grouped-median (lambda (data . args) "calculate the grouped median of a collection"
-    (let ((n (len data))
+  (grouped-median (lambda (data . args)
+    "calculate the grouped median of a collection <par>data</par>. The
+     collection has to implement the <fun>collec?</fun> protocol.
+
+     params:
+       - data: the input data
+     complexity: O(n+length+index) if sorted, else sort
+     returns: the grouped median as a float"
+    (let ((n (length data))
           (data (_sort data))
           (interval (get-from args 0 1)))
       (cond
@@ -67,22 +111,58 @@
                  (f (list:count data x)))
             (+ l (/. (* interval (- (/. n 2) cf)) f))))))))
 
-  (variance (lambda (data . args) "calculate the variance of a collection"
-    (let* ((n (len data))
-           (mean (get-from args 0 (nil)))
+  (variance (lambda (data . mean)
+    "calculate the variance of a collection <par>data</par>. Optionally takes
+     a precalculated mean to speed up the process of calculation.
+
+     params:
+       - data: the input data
+       - mean: a precomputed mean (optional)
+     complexity: O(length+mean) if the mean was not precalulated, else O(length)
+     returns: a float of the variance"
+    (let* ((n (length data))
+           (mean (get-from mean 0 (nil)))
            (ss (_ss data mean)))
       (/. ss (- n 1)))))
 
-  (pvariance (lambda (data . args) "calculate the population variance of a collection"
-    (let* ((n (len data))
-           (mean (get-from args 0 (nil)))
+  (pvariance (lambda (data . mean)
+    "calculate the population variance of a collection <par>data</par>.
+     Optionally takes a precalculated mean to speed up the process of
+     calculation.
+
+     params:
+       - data: the input data
+       - mean: a precomputed mean (optional)
+     complexity: O(length+mean) if the mean was not precalulated, else O(length)
+     returns: a float of the population variance"
+    (let* ((n (length data))
+           (mean (get-from mean 0 (nil)))
            (ss (_ss data mean)))
       (/. ss n))))
 
-  (stdev (lambda (data . args) "calculate the square root of the sample variance"
-    (let* ((mean (get-from args 0 (nil))))
+  (stdev (lambda (data . mean)
+    "calculate the standard deviation of a collection <par>data</par>.
+     Optionally takes a precalculated mean to speed up the process of
+     calculation.
+
+     params:
+       - data: the input data
+       - mean: a precomputed mean (optional)
+     complexity: O(<fun>statistics:variance</fun>)
+     returns: the standard deviation as float"
+    (let* ((mean (get-from mean 0 (nil))))
       (sqrt (variance data mean)))))
 
-  (pstdev (lambda (data . args) "calculate the square root of the population variance"
+  (pstdev (lambda (data . args)
+    "calculate the standard deviation of a collection <par>data</par>.
+     As opposed to <fun>statistics:stdev</fun>, this is based on the
+     population variance. Optionally takes a precalculated mean to speed up
+     the process of calculation.
+
+     params:
+       - data: the input data
+       - mean: a precomputed mean (optional)
+     complexity: O(<fun>statistics:variance</fun>)
+     returns: the standard deviation as float"
     (let* ((mean (get-from args 0 (nil))))
       (sqrt (pvariance data mean))))))
